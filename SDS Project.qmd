@@ -1,0 +1,183 @@
+---
+title: "SDS324E Project"
+format: html
+editor: visual
+Authors: Sierra Taylor and London Whitney
+---
+
+## Introduction
+
+## Research Questions
+
+## Data Exploration
+
+```{r}
+install.packages(mosaicData) #have to do it manually through Packages
+library(mosaicData)
+data(Gestation)
+
+library(dplyr)
+library(tidyverse)
+library(ggfortify)
+library(ggplot2)
+library(splines)
+library(car)
+library(boot)
+
+
+# Cleaning the data
+Gestation_edits <- select(Gestation, marital, gestation, age, parity, dht, wt, smoke) %>%
+  filter(
+    !is.na(age),
+    !is.na(gestation),
+    !is.na(parity),
+    !is.na(dht),
+    !is.na(wt),
+    !is.na(marital),
+    !is.na(smoke)
+  )
+```
+
+```{r}
+## Exploring the Data
+
+# 1. Age
+ggplot(Gestation_edits, aes(x = age, y = gestation)) + 
+  geom_point() +
+  labs(
+    title = "Maternal Age vs Gestation Period",
+    x = "Maternal Age (years)",
+    y = "Gestation period (days)"
+  ) +
+  theme_classic(
+  )
+
+# 2. Birth weight 
+ggplot(Gestation_edits, aes(x = wt, y = gestation)) + 
+  geom_point() +
+  labs(
+    title = "Birth Weight vs. Gestation Period",
+    x = "Birth Weight (oz)",
+    y = "Gestation Period (days)"
+  ) +
+  theme_classic(
+  )
+
+# 3. Smoking
+ggplot(Gestation_edits, aes(x = smoke, y = gestation)) + 
+  geom_boxplot() +
+  labs(
+    title = "Smoking Status vs. Gestation Period",
+    x = "Smoking Status",
+    y = "Gestation period (days)"
+  ) +
+  theme_classic(
+  )
+
+# 4. Parity
+ggplot(Gestation_edits, aes(x = parity, y = gestation)) + geom_point() +
+  labs(
+    title = "Parity Status vs. Gestation Period",
+    x = "Parity Status",
+    y = "Gestation period (days)"
+  )
+
+# 5. Paternal Height
+ggplot(Gestation_edits, aes(x = dht, y = gestation)) + geom_point() +
+  labs(
+    title = "Paternal Height vs. Gestation Period",
+    x = "Paternal Height",
+    y = "Gestation period (days)"
+  )
+```
+
+## Multiple Linear Regression Model
+
+```{r}
+gestation_lm <- lm(gestation ~ wt + smoke + age + parity + dht, data = Gestation_edits)
+summary(gestation_lm)
+```
+
+## Improving the Model 
+
+```{r}
+# Diagnostic plots
+autoplot(gestation_lm)
+
+# Log transformations
+gestation_log_lm <- lm(log(gestation) ~ log(wt) + smoke + log(age) + parity + log(dht), data = Gestation_edits)
+autoplot(gestation_log_lm)
+
+# Spline transformation
+gestation_log_bs_lm <- lm(log(gestation) ~ bs(log(wt), df = 4) + smoke + bs(log(age), df = 4) + parity + bs(log(dht), df = 4), data = Gestation_edits)
+autoplot(gestation_log_bs_lm)
+
+# Interaction
+gestation_log_bs_interaction_lm <- lm(log(gestation) ~ bs(log(wt), df = 4) * smoke + bs(log(age), df = 4) + parity + bs(log(dht), df = 4), data = Gestation_edits)
+summary(gestation_log_bs_interaction_lm)
+```
+
+## Formal Hypothesis Tests 
+
+```{r}
+hypotheses <- lm(log(gestation) ~ bs(log(wt), df = 4) + smoke + bs(log(age), df = 4), data = Gestation_edits)
+anova(hypotheses)
+```
+
+## Robustness of Results
+
+```{r}
+# Removing Influential Points and Refitting the Model
+influential_points <- which(cooks.distance(gestation_log_bs_interaction_lm) > (4 / nrow(Gestation_edits)))
+
+Gestation_no_influential <- Gestation_edits[-influential_points, ]
+
+model_no_influential <- lm(log(gestation) ~ bs(log(wt), df = 4) * smoke + bs(log(age), df = 4) + parity + bs(log(dht), df = 4), data = Gestation_no_influential)
+
+summary(model_no_influential)
+autoplot(model_no_influential)
+```
+
+```{r}
+# Mutlicolinearity
+vif(gestation_log_bs_lm)
+
+# Cross Validation Estimating LOO
+n <- nrow(Gestation_edits)
+errors <- numeric(n)
+
+for (i in 1:n) {
+  train_data <- Gestation_edits[-i, ]
+  test_data <- Gestation_edits[i, , drop = FALSE]
+  
+gestation_log_bs_lm <- lm(
+  log(gestation) ~ 
+    bs(log(wt), df = 4, Boundary.knots = range(log(Gestation_edits$wt))) + 
+    smoke + 
+    bs(log(age), df = 4, Boundary.knots = range(log(Gestation_edits$age))) + 
+    parity + 
+    bs(log(dht), df = 4, Boundary.knots = range(log(Gestation_edits$dht))),
+  data = Gestation_edits
+)
+ predicted <- predict(model, newdata = test_data)
+  errors[i] <- (log(test_data$gestation) - predicted)^2
+}
+
+loocv_mse <- mean(errors)
+cat("LOOCV Prediction Error (MSE):", loocv_mse, "\n")
+
+# Seeing if Model is Overfitted
+train_predictions <- predict(gestation_log_bs_lm)
+
+train_mse <- mean((log(Gestation_edits$gestation) - train_predictions)^2)
+print(paste("Training MSE:", train_mse))
+
+
+```
+
+```{r}
+step_model <- step(gestation_log_bs_lm, direction = "both")
+summary(step_model)
+```
+
+## Conclusions
