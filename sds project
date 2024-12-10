@@ -1,1 +1,119 @@
+Introduction
+
+Research Questions
+
+Data Exploration
+
+{r}
+install.packages(mosaicData) #have to do it manually through Packages
+library(mosaicData)
+data(Gestation)
+
+library(dplyr)
+library(tidyverse)
+library(ggfortify)
+library(ggplot2)
+library(splines)
+
+# Cleaning the data
+Gestation_edits <- select(Gestation, marital, gestation, age, parity, dht, wt, smoke) %>%
+  filter(
+    !is.na(age),
+    !is.na(gestation),
+    !is.na(parity),
+    !is.na(dht),
+    !is.na(wt),
+    !is.na(marital),
+    !is.na(smoke)
+  )
+
+{r}
+## Exploring the Data
+
+# 1. Age
+ggplot(Gestation_edits, aes(x = age, y = gestation)) + 
+  geom_point() +
+  labs(
+    title = "Maternal Age vs Gestation Period",
+    x = "Maternal Age (years)",
+    y = "Gestation period (days)"
+  ) +
+  theme_classic(
+  )
+
+# 2. Birth weight 
+ggplot(Gestation_edits, aes(x = wt, y = gestation)) + 
+  geom_point() +
+  labs(
+    title = "Birth Weight vs. Gestation Period",
+    x = "Birth Weight (oz)",
+    y = "Gestation Period (days)"
+  ) +
+  theme_classic(
+  )
+
+# 3. Smoking
+ggplot(Gestation_edits, aes(x = smoke, y = gestation)) + 
+  geom_boxplot() +
+  labs(
+    title = "Smoking Status vs. Gestation Period",
+    x = "Smoking Status",
+    y = "Gestation period (days)"
+  ) +
+  theme_classic(
+  )
+
+# 4. Parity
+ggplot(Gestation_edits, aes(x = parity, y = gestation)) + geom_point() +
+  labs(
+    title = "Parity Status vs. Gestation Period",
+    x = "Parity Status",
+    y = "Gestation period (days)"
+  )
+
+# 5. Paternal Height
+ggplot(Gestation_edits, aes(x = dht, y = gestation)) + geom_point() +
+  labs(
+    title = "Paternal Height vs. Gestation Period",
+    x = "Paternal Height",
+    y = "Gestation period (days)"
+  )
+
+Multiple Linear Regression Model
+
+{r}
+gestation_lm <- lm(gestation ~ wt + smoke + age + parity + dht, data = Gestation_edits)
+summary(gestation_lm)
+
+Improving the Model 
+
+{r}
+# Diagnostic plots
+autoplot(gestation_lm)
+
+# Log transformations
+gestation_log_lm <- lm(log(gestation) ~ log(wt) + smoke + log(age) + parity + log(dht), data = Gestation_edits)
+autoplot(gestation_log_lm)
+
+# Spline transformation
+gestation_log_bs_lm <- lm(log(gestation) ~ bs(log(wt), df = 4) + smoke + bs(log(age), df = 4) + parity + bs(log(dht), df = 4), data = Gestation_edits)
+autoplot(gestation_log_bs_lm)
+
+# Interaction
+gestation_log_bs_interaction_lm <- lm(log(gestation) ~ bs(log(wt), df = 4) * smoke + bs(log(age), df = 4) + parity + bs(log(dht), df = 4), data = Gestation_edits)
+summary(gestation_log_bs_interaction_lm)
+
+Formal Hypothesis Tests 
+
+{r}
+hypotheses <- lm(log(gestation) ~ bs(log(wt), df = 4) + smoke + bs(log(age), df = 4), data = Gestation_edits)
+anova(hypotheses)
+
+Robustness of Results
+
+{r}
+
+
+Conclusions
+
 
