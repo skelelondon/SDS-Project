@@ -1,0 +1,217 @@
+# The data
+library(ggplot2)
+library(dplyr)
+library(tidyverse)
+
+install.packages(mosaicData)
+library(mosaicData)
+data(Gestation)
+
+
+# 0. Introduce the data
+# Finding number of observations for each predictor variable
+table(Gestation_edits$smoke)
+
+# 1. Formulation of Hypotheses
+
+##Hypothesis 1: A mom's age affects how long her pregnancy lasts.
+
+##Hypothesis 2: Whether a mom smokes or not affects how long her pregnancy lasts.
+
+##Hypothesis 3: How long a pregnancy lasts affects the baby's birth weight.
+
+# 2. Exploring Marginal Relationships
+
+# Cleaning the data
+Gestation_edits <- select(Gestation, marital, gestation, age, parity, dht, wt, smoke) %>%
+  filter(
+    !is.na(age),
+    !is.na(gestation),
+    !is.na(parity),
+    !is.na(dht),
+    !is.na(wt),
+    !is.na(marital),
+    !is.na(smoke)
+  )
+
+
+## 1 Age
+ggplot(Gestation_edits, aes(x = age, y = gestation)) + 
+  geom_point() +
+  labs(
+    title = "Maternal Age vs Gestation",
+    x = "Maternal Age (years)",
+    y = "Gestation period (days)"
+  ) +
+  theme_classic(
+  )
+
+
+## 2 Birth weight 
+
+ggplot(Gestation_edits, aes(x = wt, y = gestation)) + 
+  geom_point() +
+  labs(
+    title = "Gestation Period vs Birth Weight",
+    x = "Birth Weight (oz)",
+    y = "Gestation Period (days)"
+  ) +
+  theme_classic(
+  )
+
+
+## 3 Smoking
+
+ggplot(Gestation_edits, aes(x = smoke, y = gestation)) + 
+  geom_boxplot() +
+  labs(
+    title = "Gestation Period vs Smoking Status",
+    x = "Smoking Status",
+    y = "Gestation period (days)"
+  ) +
+  theme_classic(
+  )
+
+## 4 Parity
+
+ggplot(Gestation_edits, aes(x = parity, y = gestation)) + 
+  geom_point() +
+  labs(
+    title = "Maternal Parity vs Gestation",
+    x = "Maternal Parity (number of children)",
+    y = "Gestation period (days)"
+  ) +
+  theme_classic(
+  )
+
+## 5 Paternal Height
+
+ggplot(Gestation_edits, aes(x = dht, y = gestation)) + 
+  geom_point() +
+  labs(
+    title = "Paternal Height vs Gestation Period",
+    x = "Paternal Height (in)",
+    y = "Gestation Period (days)"
+  ) +
+  theme_classic(
+  )
+
+## Which of your predictors seems to be most highly correlated with the outcome of interest? Why do you think this is true?
+#Gestation vs. Birth Weight has the most correlation. Out of all the visuals, this one makes the most sense and has a clear trend of its positive direction and slope. 
+
+
+# 3. Fitting the Model and Assessing Significance
+install.packages("ggfortify")
+library(ggfortify)
+install.packages("ggplot2")
+library(ggplot2)
+
+# Fit a multiple linear regression model
+gestation_lm <- lm(gestation ~ wt + smoke + age + parity + dht, data = Gestation_edits)
+
+# Summary of the model
+summary(gestation_lm)
+
+# Diagnostic plots for the model
+autoplot(gestation_lm)
+
+# 4. Improving the Model
+
+# Check assumptions using residuals
+hist(residuals(gestation_lm), main = "Histogram of Residuals", xlab = "Residuals")
+shapiro.test(residuals(gestation_lm))
+
+# Try log transformation of gestation period
+Gestation_edits$log_gestation <- log(Gestation_edits$gestation)
+
+# Fit a new model with log-transformed outcome
+gestation_log_lm <- lm(log_gestation ~ wt + smoke + age + parity + dht, data = Gestation_edits)
+
+# Diagnostics for improved model of log
+summary(gestation_log_lm)
+autoplot(gestation_log_lm)
+
+# Try splines transformation of gestation period 
+library(splines)
+library(ggfortify)
+
+# Fit a model with a spline for birth weight
+gestation_spline_lm <- lm(log_gestation ~ bs(wt, df=3) + smoke + age + parity + dht, data = Gestation_edits)
+
+# Summary of the spline model
+summary(gestation_spline_lm)
+
+# Diagnostic plots for the spline model
+autoplot(gestation_spline_lm)
+
+
+# 5. Testing Your hypothesis
+
+# Fit the model
+model_age <- lm(gestation ~ age, data = Gestation_edits)
+
+# Summary of the model
+summary(model_age)
+
+# ANOVA test
+anova(model_age)
+
+# Drop1 test
+drop1(model_age, test = "F")
+
+## Hypothesis 2
+
+# Fit the model
+model_smoke <- lm(gestation ~ smoke, data = Gestation_edits)
+
+# Summary of the model
+summary(model_smoke)
+
+# ANOVA test
+anova(model_smoke)
+
+# Drop1 test
+drop1(model_smoke, test = "F")
+
+
+## Hypothesis 3
+
+# Fit the model
+model_wt <- lm(gestation ~ wt, data = Gestation_edits)
+
+# Summary of the model
+summary(model_wt)
+
+# ANOVA test
+anova(model_wt)
+
+# Drop1 test
+drop1(model_wt, test = "F")
+
+# 6. Robustness of Conclusions
+
+# Identify influential points
+influential_points <- which(cooks.distance(gestation_lm) > (4 / nrow(Gestation_edits)))
+
+# Remove influential points and refit the model
+Gestation_no_influential <- Gestation_edits[-influential_points, ]
+model_no_influential <- lm(gestation ~ wt + smoke + age + parity + dht, data = Gestation_no_influential)
+
+# Summary of the updated model
+summary(model_no_influential)
+
+# Diagnostics for the updated model
+autoplot(model_no_influential)
+
+# 6. Variance Inflation Factors (VIFs)
+
+# Multicollinearity
+library(car)
+vif(gestation_lm)
+
+# LOO
+
+
+# 7. Automatic Model Selection
+step_model <- step(gestation_lm, direction = "both")
+summary(step_model)
