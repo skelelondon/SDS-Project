@@ -110,8 +110,22 @@ hypotheses <- lm(log(gestation) ~ bs(log(wt), df = 4) + smoke + bs(log(age), df 
 anova(hypotheses)
 
 Robustness of Results
+influential_points <- which(cooks.distance(gestation_log_bs_interaction_lm) > (4 / nrow(Gestation_edits)))
 
+# Remove influential points and refit the model
+#Testing influential points
+influential_points <- which(cooks.distance(gestation_log_bs_interaction_lm) > (4 / nrow(Gestation_edits)))
+Gestation_no_influential <- Gestation_edits[-influential_points, ]
+model_no_influential <- lm(log(gestation) ~ bs(log(wt), df = 4) * smoke + bs(log(age), df = 4) + parity + bs(log(dht), df = 4), data = Gestation_no_influential)
+summary(model_no_influential)
+autoplot(model_no_influential)
+# Summary of the updated model
+summary(model_no_influential)
+
+# Diagnostics for the updated model
+autoplot(model_no_influential)
 {r}
+
 
 
 Conclusions
