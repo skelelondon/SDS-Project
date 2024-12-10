@@ -6,6 +6,31 @@ Authors: Sierra Taylor and London Whitney
 ---
 
 ## Introduction
+Dataset Introduction
+The dataset used for this analysis is the Gestation dataset from the mosaicData package in R. This dataset contains information on various factors related to pregnancy and birth outcomes.
+Variables
+Outcome Variable:
+Gestation Period (gestation): This is a numeric variable representing the length of the gestation period in days.
+Predictors:
+Maternal Age (age): Numeric variable representing the age of the mother in years.
+Birth Weight (wt): Numeric variable representing the birth weight of the baby in ounces.
+Smoking Status (smoke): Categorical variable indicating the smoking status of the mother (e.g., "never" (336 observations), "now" (263 observations), "once did, not now", (67 observations) "until current pregnancy" (61 observation)).
+Marital Status (marital): Categorical variable indicating the marital status of the mother.
+Parity (parity): Numeric variable representing the number of previous pregnancies.
+Father's Height (dht): Numeric variable representing the height of the father in inches.
+Data Source
+The data was sourced from the mosaicData package, which provides datasets for teaching and learning statistics. This must be downloaded manually from the packages tab and installed. 
+Observations
+The dataset contains 1,236 observations (rows). After cleaning the data to remove rows with missing values, we have a subset of 727 observations.
+Group Observations
+For the categorical variable smoke:
+Never smoked: X observations
+Currently smoking: Y observations
+Once did, not now: Z observations
+Until current pregnancy: W observations
+Interest
+This dataset is particularly interesting to me because it relates to my major. I am a Human development and Family Science Major, which allows us to explore the relationships between various maternal and paternal factors and the gestation period. Understanding these relationships can provide insights into factors that influence pregnancy outcomes, which is valuable for public health and medical research.
+
 
 ## Research Questions
 
